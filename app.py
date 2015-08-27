@@ -1,7 +1,9 @@
 from gevent import monkey
 monkey.patch_all()
 
+import os
 import time
+import subprocess
 from threading import Thread
 from flask import Flask, render_template, session, request
 from flask.ext.socketio import SocketIO, emit, join_room, leave_room, \
@@ -13,6 +15,22 @@ app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app)
 thread = None
 
+
+def get_download_status(dest_apth, source_size):
+	"""
+		Method for calculating the percentage of completion
+		and then sending a respinse to page using socketIO.
+		This process is repeating untill the copy is not 
+		done completely. 
+	"""
+	dest_size = subprocess.call("du -hs destination/")
+	source_size = subprocess.call("du -hs source/")
+	while(dest_size <= source_size):
+		time.sleep(1)
+		percent = dest_size/source_size*100
+		socketio.emit("progressbar",
+			{'percentage':percent})
+		
 
 def background_thread():
     """Example of how to send server generated events to clients."""
